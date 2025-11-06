@@ -111,31 +111,33 @@ Use --- to create new slides"
               )}
             </div>
             {totalSlides > 1 && (
-              <div className="border-t border-border px-6 py-3 bg-background flex items-center justify-between gap-4">
+              <div className="border-t border-border px-6 py-3 bg-background flex items-center gap-4">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={prevSlide}
                   disabled={currentSlide === 0}
-                  className="gap-1"
+                  className="gap-1 shrink-0"
                 >
                   <ChevronLeft className="w-4 h-4" />
                   Previous
                 </Button>
 
-                <div className="flex gap-1.5 items-center">
-                  {slides.map((_, index) => (
-                    <button
-                      key={index}
-                      onClick={() => goToSlide(index)}
-                      className={`h-2 w-8 rounded-full transition-all hover:scale-110 ${
-                        index === currentSlide
-                          ? 'bg-primary'
-                          : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
-                      }`}
-                      aria-label={`Go to slide ${index + 1}`}
-                    />
-                  ))}
+                <div className="flex-1 overflow-x-auto scrollbar-hide">
+                  <div className="flex gap-1.5 items-center justify-center min-w-max px-2">
+                    {slides.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={() => goToSlide(index)}
+                        className={`h-2 w-8 rounded-full transition-all hover:scale-110 shrink-0 ${
+                          index === currentSlide
+                            ? 'bg-primary'
+                            : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
+                        }`}
+                        aria-label={`Go to slide ${index + 1}`}
+                      />
+                    ))}
+                  </div>
                 </div>
 
                 <Button
@@ -143,7 +145,7 @@ Use --- to create new slides"
                   size="sm"
                   onClick={nextSlide}
                   disabled={currentSlide === totalSlides - 1}
-                  className="gap-1"
+                  className="gap-1 shrink-0"
                 >
                   Next
                   <ChevronRight className="w-4 h-4" />
