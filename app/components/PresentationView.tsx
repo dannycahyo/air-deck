@@ -21,6 +21,10 @@ export function PresentationView() {
   const navigate = useNavigate();
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
+  const [streamDimensions, setStreamDimensions] = useState({
+    width: 640,
+    height: 480,
+  });
 
   const handleGesture = useCallback(
     (gesture: GestureType) => {
@@ -96,6 +100,32 @@ export function PresentationView() {
     };
   }, []);
 
+  // Read actual video stream dimensions
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handleLoadedMetadata = () => {
+      if (video.videoWidth && video.videoHeight) {
+        setStreamDimensions({
+          width: video.videoWidth,
+          height: video.videoHeight,
+        });
+      }
+    };
+
+    video.addEventListener('loadedmetadata', handleLoadedMetadata);
+
+    // If already loaded
+    if (video.videoWidth && video.videoHeight) {
+      handleLoadedMetadata();
+    }
+
+    return () => {
+      video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+    };
+  }, [videoRef]);
+
   if (totalSlides === 0) {
     return (
       <div className="h-screen flex items-center justify-center bg-background">
@@ -145,6 +175,8 @@ export function PresentationView() {
               keypoints={keypoints}
               videoWidth={320}
               videoHeight={240}
+              streamWidth={streamDimensions.width}
+              streamHeight={streamDimensions.height}
               isActive={isActive}
             />
           )}
