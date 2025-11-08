@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { SlideRenderer } from './SlideRenderer';
 import { GestureFeedback } from './GestureFeedback';
+import { PoseKeypoints } from './PoseKeypoints';
 import { usePresentationContext } from '~/contexts/PresentationContext';
 import { useGestureDetection } from '~/hooks/useGestureDetection';
 import { useKeyboardNavigation } from '~/hooks/useKeyboardNavigation';
@@ -10,7 +11,7 @@ import {
   AlertDescription,
   AlertTitle,
 } from '~/components/ui/alert';
-import { AlertCircle, Loader2, Maximize } from 'lucide-react';
+import { AlertCircle, Loader2, Maximize, Camera, CameraOff } from 'lucide-react';
 import { Button } from '~/components/ui/button';
 import type { GestureType } from '~/services/gestureDetection';
 
@@ -19,6 +20,7 @@ export function PresentationView() {
     usePresentationContext();
   const navigate = useNavigate();
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
 
   const handleGesture = useCallback(
     (gesture: GestureType) => {
@@ -31,7 +33,7 @@ export function PresentationView() {
     [nextSlide, prevSlide],
   );
 
-  const { isLoading, error, isActive, lastGesture, videoRef } =
+  const { isLoading, error, isActive, lastGesture, videoRef, keypoints } =
     useGestureDetection({
       enabled: true,
       onGesture: handleGesture,
@@ -45,6 +47,10 @@ export function PresentationView() {
       navigate('/');
     },
     enabled: true,
+    customHandlers: {
+      c: () => setShowCamera((prev) => !prev),
+      C: () => setShowCamera((prev) => !prev),
+    },
   });
 
   const enterFullscreen = async () => {
@@ -108,12 +114,42 @@ export function PresentationView() {
 
   return (
     <div className="h-screen w-screen bg-background relative overflow-hidden">
-      <video
-        ref={videoRef}
-        className="absolute top-0 left-0 opacity-0 pointer-events-none"
-        playsInline
-        muted
-      />
+      {/* Camera video container - always rendered, position changes based on showCamera */}
+      <div
+        className={`${
+          showCamera
+            ? 'fixed top-6 right-6 z-50'
+            : 'absolute top-0 left-0 -z-10'
+        } transition-all duration-300`}
+      >
+        <div
+          className={`relative ${
+            showCamera
+              ? 'rounded-lg overflow-hidden border-2 border-primary shadow-2xl'
+              : ''
+          }`}
+        >
+          <video
+            ref={videoRef}
+            className={`${
+              showCamera
+                ? 'w-[320px] h-[240px] object-cover'
+                : 'w-0 h-0 opacity-0'
+            }`}
+            style={showCamera ? { transform: 'scaleX(-1)' } : undefined}
+            playsInline
+            muted
+          />
+          {showCamera && (
+            <PoseKeypoints
+              keypoints={keypoints}
+              videoWidth={320}
+              videoHeight={240}
+              isActive={isActive}
+            />
+          )}
+        </div>
+      </div>
 
       {isLoading && (
         <div className="absolute inset-0 z-40 flex items-center justify-center bg-background/80 backdrop-blur-sm">
@@ -161,7 +197,21 @@ export function PresentationView() {
         lastGesture={lastGesture}
       />
 
-      <div className="fixed top-6 right-6 z-50">
+      {/* Control buttons - top-left */}
+      <div className="fixed top-6 left-6 z-50 flex gap-2">
+        <Button
+          onClick={() => setShowCamera((prev) => !prev)}
+          variant="outline"
+          size="sm"
+          className="bg-background/80 backdrop-blur-sm border shadow-lg"
+          title={showCamera ? 'Hide camera (C)' : 'Show camera (C)'}
+        >
+          {showCamera ? (
+            <CameraOff className="w-4 h-4" />
+          ) : (
+            <Camera className="w-4 h-4" />
+          )}
+        </Button>
         {!isFullscreen ? (
           <Button
             onClick={enterFullscreen}
@@ -169,14 +219,11 @@ export function PresentationView() {
             size="sm"
             className="bg-background/80 backdrop-blur-sm border shadow-lg"
           >
-            <Maximize className="w-4 h-4 mr-2" />
-            Enter Fullscreen
+            <Maximize className="w-4 h-4" />
           </Button>
         ) : (
-          <div className="px-4 py-2 rounded-full bg-background/80 backdrop-blur-sm border shadow-lg text-xs text-muted-foreground">
-            Press{' '}
-            <kbd className="px-1.5 py-0.5 bg-muted rounded">ESC</kbd>{' '}
-            to exit
+          <div className="px-3 py-2 rounded bg-background/80 backdrop-blur-sm border shadow-lg text-xs text-muted-foreground flex items-center gap-1">
+            <kbd className="px-1.5 py-0.5 bg-muted rounded font-mono">ESC</kbd>
           </div>
         )}
       </div>

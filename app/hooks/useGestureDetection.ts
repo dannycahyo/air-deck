@@ -4,6 +4,7 @@ import type {
   GestureType,
   GestureDetectionConfig,
 } from '~/services/gestureDetection';
+import type { Keypoint } from '@tensorflow-models/pose-detection';
 
 interface UseGestureDetectionOptions {
   enabled?: boolean;
@@ -17,6 +18,7 @@ interface UseGestureDetectionReturn {
   isActive: boolean;
   lastGesture: GestureType;
   videoRef: React.RefObject<HTMLVideoElement | null>;
+  keypoints: Keypoint[];
 }
 
 export function useGestureDetection({
@@ -28,6 +30,7 @@ export function useGestureDetection({
   const [error, setError] = useState<string | null>(null);
   const [isActive, setIsActive] = useState(false);
   const [lastGesture, setLastGesture] = useState<GestureType>(null);
+  const [keypoints, setKeypoints] = useState<Keypoint[]>([]);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const serviceRef = useRef<GestureDetectionService | null>(null);
@@ -48,6 +51,10 @@ export function useGestureDetection({
         setLastGesture(gesture);
         onGesture?.(gesture);
       }
+
+      // Update keypoints for visualization
+      const detectedKeypoints = serviceRef.current.getLastKeypoints();
+      setKeypoints(detectedKeypoints);
     } catch (err) {
       console.error('Error in gesture detection loop:', err);
     }
@@ -167,5 +174,6 @@ export function useGestureDetection({
     isActive,
     lastGesture,
     videoRef,
+    keypoints,
   };
 }

@@ -5,6 +5,7 @@ interface UseKeyboardNavigationOptions {
   onPrevious: () => void;
   onExit?: () => void;
   enabled?: boolean;
+  customHandlers?: Record<string, () => void>;
 }
 
 export function useKeyboardNavigation({
@@ -12,6 +13,7 @@ export function useKeyboardNavigation({
   onPrevious,
   onExit,
   enabled = true,
+  customHandlers = {},
 }: UseKeyboardNavigationOptions) {
   useEffect(() => {
     if (!enabled) {
@@ -19,6 +21,13 @@ export function useKeyboardNavigation({
     }
 
     const handleKeyDown = (event: KeyboardEvent) => {
+      // Check custom handlers first
+      if (customHandlers[event.key]) {
+        event.preventDefault();
+        customHandlers[event.key]();
+        return;
+      }
+
       switch (event.key) {
         case "ArrowRight":
         case "PageDown":
@@ -55,5 +64,5 @@ export function useKeyboardNavigation({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [enabled, onNext, onPrevious, onExit]);
+  }, [enabled, onNext, onPrevious, onExit, customHandlers]);
 }

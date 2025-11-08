@@ -23,6 +23,7 @@ export class GestureDetectionService {
   };
   private isOnCooldown = false;
   private config: GestureDetectionConfig;
+  private lastKeypoints: poseDetection.Keypoint[] = [];
 
   constructor(config: Partial<GestureDetectionConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -88,6 +89,9 @@ export class GestureDetectionService {
       const pose = poses[0];
       const keypoints = pose.keypoints;
 
+      // Store keypoints for visualization
+      this.lastKeypoints = keypoints;
+
       // MoveNet keypoint indices:
       // 9 = left_wrist, 10 = right_wrist
       const leftWrist = keypoints.find((kp) => kp.name === "left_wrist");
@@ -135,6 +139,10 @@ export class GestureDetectionService {
     setTimeout(() => {
       this.isOnCooldown = false;
     }, this.config.cooldownMs);
+  }
+
+  getLastKeypoints(): poseDetection.Keypoint[] {
+    return this.lastKeypoints;
   }
 
   dispose() {
