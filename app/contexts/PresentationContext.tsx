@@ -4,6 +4,7 @@ import {
   useState,
   useCallback,
   useMemo,
+  useEffect,
 } from 'react';
 import type { ReactNode } from 'react';
 
@@ -18,15 +19,15 @@ interface PresentationContextType {
   totalSlides: number;
 }
 
-const PresentationContext = createContext<
-  PresentationContextType | undefined
->(undefined);
+const PresentationContext = createContext<PresentationContextType | undefined>(
+  undefined
+);
 
 export function usePresentationContext() {
   const context = useContext(PresentationContext);
   if (!context) {
     throw new Error(
-      'usePresentationContext must be used within a PresentationProvider',
+      'usePresentationContext must be used within a PresentationProvider'
     );
   }
   return context;
@@ -43,6 +44,23 @@ export function PresentationProvider({
 }: PresentationProviderProps) {
   const [markdownText, setMarkdownText] = useState(initialMarkdown);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  // Load from local storage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('airdeck-markdown');
+    if (saved) {
+      setMarkdownText(saved);
+    }
+    setIsLoaded(true);
+  }, []);
+
+  // Save to local storage when markdownText changes, but only after initial load
+  useEffect(() => {
+    if (isLoaded) {
+      localStorage.setItem('airdeck-markdown', markdownText);
+    }
+  }, [markdownText, isLoaded]);
 
   const slides = useMemo(
     () =>
@@ -50,7 +68,7 @@ export function PresentationProvider({
         .split(/\n---\n/)
         .map((slide) => slide.trim())
         .filter((slide) => slide.length > 0),
-    [markdownText],
+    [markdownText]
   );
 
   const totalSlides = slides.length;
@@ -69,7 +87,7 @@ export function PresentationProvider({
         setCurrentSlide(index);
       }
     },
-    [totalSlides],
+    [totalSlides]
   );
 
   return (
