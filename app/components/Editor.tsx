@@ -1,14 +1,21 @@
-import { Textarea } from '~/components/ui/textarea';
+import { ChevronLeft, ChevronRight, Play, Printer } from 'lucide-react';
+import { useRef } from 'react';
+import { useNavigate } from 'react-router';
+import * as rtp from 'react-to-print';
+
 import { Button } from '~/components/ui/button';
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
 } from '~/components/ui/resizable';
-import { SlideRenderer } from './SlideRenderer';
+import { Textarea } from '~/components/ui/textarea';
 import { usePresentationContext } from '~/contexts/PresentationContext';
-import { Play, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useNavigate } from 'react-router';
+
+import { SlideRenderer } from './SlideRenderer';
+
+const useReactToPrint =
+  rtp.useReactToPrint || (rtp as any).default?.useReactToPrint;
 
 export function Editor() {
   const {
@@ -22,6 +29,8 @@ export function Editor() {
     goToSlide,
   } = usePresentationContext();
   const navigate = useNavigate();
+  const contentRef = useRef<HTMLDivElement>(null);
+  const reactToPrintFn = useReactToPrint({ contentRef });
 
   const handlePresentClick = () => {
     navigate('/present');
@@ -39,15 +48,28 @@ export function Editor() {
               : 'Start writing to create slides'}
           </p>
         </div>
-        <Button
-          onClick={handlePresentClick}
-          disabled={totalSlides === 0}
-          size="lg"
-          className="gap-2"
-        >
-          <Play className="w-5 h-5" />
-          Present
-        </Button>
+
+        <div className="flex gap-2">
+          <Button
+            onClick={reactToPrintFn}
+            disabled={totalSlides === 0}
+            size="lg"
+            className="gap-2"
+          >
+            <Printer className="w-5 h-5" />
+            Print PDF
+          </Button>
+
+          <Button
+            onClick={handlePresentClick}
+            disabled={totalSlides === 0}
+            size="lg"
+            className="gap-2"
+          >
+            <Play className="w-5 h-5" />
+            Present
+          </Button>
+        </div>
       </header>
 
       {/* Main Content */}
@@ -56,17 +78,13 @@ export function Editor() {
         <ResizablePanel defaultSize={50} minSize={30}>
           <div className="h-full flex flex-col p-6 bg-background">
             <div className="mb-4">
-              <h2 className="text-lg font-semibold mb-1">
-                Markdown Editor
-              </h2>
+              <h2 className="text-lg font-semibold mb-1">Markdown Editor</h2>
               <p className="text-sm text-muted-foreground">
-                Use{' '}
-                <code className="bg-muted px-1 py-0.5 rounded">
-                  ---
-                </code>{' '}
-                to separate slides
+                Use <code className="bg-muted px-1 py-0.5 rounded">---</code> to
+                separate slides
               </p>
             </div>
+
             <Textarea
               value={markdownText}
               onChange={(e) => setMarkdownText(e.target.value)}
@@ -91,10 +109,10 @@ Use --- to create new slides"
           <div className="h-full flex flex-col bg-muted/30">
             <div className="border-b border-border px-6 py-4 bg-background">
               <h2 className="text-lg font-semibold">
-                Preview{' '}
-                {totalSlides > 0 ? `- Slide ${currentSlide + 1}` : ''}
+                Preview {totalSlides > 0 ? `- Slide ${currentSlide + 1}` : ''}
               </h2>
             </div>
+
             <div className="flex-1 overflow-auto">
               {slides.length > 0 ? (
                 <SlideRenderer markdown={slides[currentSlide]} />
@@ -103,8 +121,7 @@ Use --- to create new slides"
                   <div className="text-center">
                     <p className="text-lg mb-2">No slides yet</p>
                     <p className="text-sm">
-                      Start typing in the editor to see your
-                      presentation
+                      Start typing in the editor to see your presentation
                     </p>
                   </div>
                 </div>
@@ -155,6 +172,20 @@ Use --- to create new slides"
           </div>
         </ResizablePanel>
       </ResizablePanelGroup>
+
+      {/* Hidden Print Container */}
+      <div className="hidden">
+        <div ref={contentRef}>
+          {slides.map((slide, index) => (
+            <div key={index} className="break-after-page h-screen w-screen">
+              <SlideRenderer
+                markdown={slide}
+                className="h-full overflow-visible"
+              />
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
